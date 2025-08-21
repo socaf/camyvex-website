@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camyvex Admin Dashboard</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0A0B0C;
+            color: #FFFFFF;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #E3C14B;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #1A1B1E;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #E3C14B;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 12px 16px;
+            background: #1A1B1E;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #FFFFFF;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .search-box::placeholder {
+            color: #666;
+        }
+        
+        .prompts-list {
+            display: grid;
+            gap: 16px;
+        }
+        
+        .prompt-card {
+            background: #1A1B1E;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        
+        .prompt-card:hover {
+            border-color: #E3C14B;
+        }
+        
+        .prompt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+        
+        .prompt-id {
+            font-family: monospace;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .prompt-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-succeeded {
+            background: #E3C14B;
+            color: #000;
+        }
+        
+        .status-failed {
+            background: #FF4444;
+            color: #FFF;
+        }
+        
+        .prompt-date {
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .prompt-text {
+            color: #CCC;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .prompt-length {
+            color: #E3C14B;
+            font-size: 12px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1A1B1E;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 90%;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-btn:hover {
+            color: #E3C14B;
+        }
+        
+        .modal-prompt {
+            background: #0A0B0C;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #CCC;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #FF4444;
+            color: #FFF;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .export-btn {
+            background: #E3C14B;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .export-btn:hover {
+            background: #D4B43F;
+        }
+        
+        .status-indicator {
+            font-size: 14px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .status-healthy {
+            background: #4CAF50;
+            color: #FFF;
+        }
+        
+        .status-error {
+            background: #F44336;
+            color: #FFF;
+        }
+        
+        .status-warning {
+            background: #FF9800;
+            color: #FFF;
+        }
+        
+        .status-loading {
+            background: #666;
+            color: #FFF;
+        }
+        
+        .status-disabled {
+            background: #555;
+            color: #AAA;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🎨 Camyvex Admin Dashboard</div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div id="last-updated" style="font-size: 12px; color: #666;"></div>
+                <button class="export-btn" onclick="loadPrompts()" style="background: #333; color: #E3C14B;">🔄 Refresh</button>
+                <button class="export-btn" onclick="exportData()">📊 Export Data</button>
+            </div>
+        </div>
+        
+        <div id="error-message" class="error" style="display: none;"></div>
+        
+        <!-- Service Status Section - Disabled to reduce API costs -->
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #E3C14B; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                🔧 Service Status
+                <span style="background: #666; color: #AAA; padding: 5px 10px; border-radius: 4px; font-size: 12px;">Disabled</span>
+            </h2>
+            <div class="stats" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+                <div class="stat-card" style="opacity: 0.5;">
+                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 10px;">
+                        <div style="font-size: 16px; font-weight: bold; color: #E3C14B;">📊 All Services</div>
+                        <div class="status-indicator status-disabled">🚫</div>
+                    </div>
+                    <div style="font-size: 12px; color: #999;">
+                        <div>Status: Monitoring Disabled</div>
+                        <div>Reason: Cost Optimization</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscription Analytics Section -->
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #E3C14B; margin-bottom: 15px;">💳 Subscription Analytics</h2>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-subscribers">-</div>
+                    <div class="stat-label">Active Subscribers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="new-subscribers">-</div>
+                    <div class="stat-label">New This Month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="monthly-revenue">-</div>
+                    <div class="stat-label">Monthly Revenue</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="churn-rate">-</div>
+                    <div class="stat-label">Churn Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="free-users">-</div>
+                    <div class="stat-label">Free Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="conversion-rate">-</div>
+                    <div class="stat-label">Conversion Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Statistics Section -->
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #E3C14B; margin-bottom: 15px;">📈 Job Statistics</h2>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-jobs">-</div>
+                    <div class="stat-label">Total Jobs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="ai-match-jobs">-</div>
+                    <div class="stat-label">AI Match Uses</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="successful-jobs">-</div>
+                    <div class="stat-label">Successful Jobs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="success-rate">-</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="avg-processing-time">-</div>
+                    <div class="stat-label">Avg Processing Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="fallback-rate">-</div>
+                    <div class="stat-label">Fallback Rate</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+            <input 
+                type="text" 
+                class="search-box" 
+                id="search-input"
+                placeholder="🔍 Search prompts, job IDs, themes, status..."
+                oninput="filterPrompts()"
+                style="flex: 1; margin-bottom: 0;"
+            >
+            
+            <select id="status-filter" onchange="filterPrompts()" style="padding: 12px; background: #1A1B1E; border: 1px solid #333; border-radius: 8px; color: #FFFFFF;">
+                <option value="">All Status</option>
+                <option value="succeeded">✅ Succeeded</option>
+                <option value="failed">❌ Failed</option>
+                <option value="processing">⏳ Processing</option>
+            </select>
+            
+            <select id="theme-filter" onchange="filterPrompts()" style="padding: 12px; background: #1A1B1E; border: 1px solid #333; border-radius: 8px; color: #FFFFFF;">
+                <option value="">All Themes</option>
+                <option value="ai_match">🤖 AI Match</option>
+                <option value="seaside">🌊 Seaside</option>
+                <option value="modern_house">🏡 Modern House</option>
+                <option value="luxury_car">🚗 Luxury Car</option>
+                <option value="business_class">✈️ Business Class</option>
+                <option value="city_skyline">🌆 City Skyline</option>
+                <option value="fine_dining">🍷 Fine Dining</option>
+                <option value="nature_landscape">🌲 Nature Landscape</option>
+                <option value="nightlife">🌃 Nightlife</option>
+                <option value="luxury_touch">✨ Luxury Touch</option>
+            </select>
+            
+            <select id="gpt-filter" onchange="filterPrompts()" style="padding: 12px; background: #1A1B1E; border: 1px solid #333; border-radius: 8px; color: #FFFFFF;">
+                <option value="">All GPT Results</option>
+                <option value="true">✅ GPT Success</option>
+                <option value="false">❌ GPT Failed</option>
+                <option value="null">➖ No GPT Used</option>
+            </select>
+        </div>
+        
+        <div id="loading" class="loading">
+            Loading AI prompts...
+        </div>
+        
+        <div id="results-header" style="display: none; margin-bottom: 15px; color: #666; font-size: 14px;">
+            Showing <span id="results-count">0</span> jobs
+        </div>
+        
+        <div id="prompts-container" class="prompts-list" style="display: none;">
+        </div>
+    </div>
+    
+    <!-- Modal -->
+    <div id="prompt-modal" class="modal" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 id="modal-title">Prompt Details</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase configuration
+        const SUPABASE_URL = 'https://fixnrcgsopzylizgkest.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpeG5yY2dzb3B6eWxpemdrZXN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0MzgwMzIsImV4cCI6MjA3MTAxNDAzMn0.GXroLnJgFWz4fuwRpDttyLAY86ES5ZbmThrvY4p5bHs';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let allPrompts = [];
+        let filteredPrompts = [];
+        
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPrompts();
+            loadSubscriptionAnalytics();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(() => {
+                loadPrompts();
+                loadSubscriptionAnalytics();
+            }, 30000);
+        });
+        
+        async function loadSubscriptionAnalytics() {
+            try {
+                const { data, error } = await supabase.rpc('get_subscription_analytics', { days_back: 30 });
+                
+                if (error) {
+                    throw error;
+                }
+                
+                const analytics = data || {};
+                
+                // Update subscription stats
+                document.getElementById('total-subscribers').textContent = analytics.total_subscribers || 0;
+                document.getElementById('new-subscribers').textContent = analytics.new_subscribers || 0;
+                document.getElementById('monthly-revenue').textContent = '$' + (analytics.total_revenue || 0).toFixed(2);
+                document.getElementById('churn-rate').textContent = (analytics.churn_rate || 0).toFixed(1) + '%';
+                
+                // Calculate free users and conversion rate
+                const planDistribution = analytics.plan_distribution || {};
+                const freeUsers = planDistribution.free || 0;
+                const totalUsers = Object.values(planDistribution).reduce((sum, count) => sum + count, 0);
+                const conversionRate = totalUsers > 0 ? (((totalUsers - freeUsers) / totalUsers) * 100).toFixed(1) : 0;
+                
+                document.getElementById('free-users').textContent = freeUsers;
+                document.getElementById('conversion-rate').textContent = conversionRate + '%';
+                
+            } catch (error) {
+                console.error('Error loading subscription analytics:', error);
+                // Set default values on error
+                document.getElementById('total-subscribers').textContent = '-';
+                document.getElementById('new-subscribers').textContent = '-';
+                document.getElementById('monthly-revenue').textContent = '-';
+                document.getElementById('churn-rate').textContent = '-';
+                document.getElementById('free-users').textContent = '-';
+                document.getElementById('conversion-rate').textContent = '-';
+            }
+        }
+
+        async function loadPrompts() {
+            try {
+                const { data, error } = await supabase
+                    .from('comprehensive_prompt_analytics')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(1000);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                allPrompts = data || [];
+                filteredPrompts = allPrompts;
+                
+                updateStats();
+                renderPrompts();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('prompts-container').style.display = 'block';
+                document.getElementById('results-header').style.display = 'block';
+                
+                // Initialize results count
+                const resultsCount = document.getElementById('results-count');
+                if (resultsCount) {
+                    resultsCount.textContent = `${filteredPrompts.length} of ${allPrompts.length} jobs`;
+                }
+                
+                // Update last updated time
+                const lastUpdated = document.getElementById('last-updated');
+                if (lastUpdated) {
+                    lastUpdated.textContent = `Updated: ${new Date().toLocaleTimeString()}`;
+                }
+                
+            } catch (error) {
+                console.error('Error loading prompts:', error);
+                showError('Failed to load prompts: ' + error.message);
+            }
+        }
+        
+        function updateStats() {
+            const totalJobs = allPrompts.length;
+            const aiMatchJobs = allPrompts.filter(p => p.theme === 'ai_match').length;
+            const gptSuccessJobs = allPrompts.filter(p => p.gpt_success === true).length;
+            const fallbackJobs = allPrompts.filter(p => p.fallback_reason).length;
+            const successfulJobs = allPrompts.filter(p => p.status === 'succeeded').length;
+            const successRate = totalJobs > 0 ? Math.round((successfulJobs / totalJobs) * 100) : 0;
+            
+            // Calculate average processing time
+            const processingTimes = allPrompts
+                .filter(p => p.processing_time && p.status === 'succeeded')
+                .map(p => parseInt(p.processing_time));
+            const avgProcessingTime = processingTimes.length > 0 
+                ? Math.round(processingTimes.reduce((a, b) => a + b, 0) / processingTimes.length / 1000) 
+                : 0;
+            
+            // Calculate fallback rate for AI Match jobs
+            const fallbackRate = aiMatchJobs > 0 ? Math.round((fallbackJobs / aiMatchJobs) * 100) : 0;
+            
+            document.getElementById('total-jobs').textContent = totalJobs;
+            document.getElementById('ai-match-jobs').textContent = `${aiMatchJobs} (${gptSuccessJobs} GPT ✓, ${fallbackJobs} Fallback)`;
+            document.getElementById('successful-jobs').textContent = successfulJobs;
+            document.getElementById('success-rate').textContent = successRate + '%';
+            
+            // Update average processing time if element exists
+            const avgTimeElement = document.getElementById('avg-processing-time');
+            if (avgTimeElement) {
+                avgTimeElement.textContent = avgProcessingTime > 0 ? avgProcessingTime + 's' : '-';
+            }
+            
+            // Add fallback rate display
+            const fallbackElement = document.getElementById('fallback-rate');
+            if (fallbackElement) {
+                fallbackElement.textContent = fallbackRate + '%';
+            }
+        }
+        
+        function renderPrompts() {
+            const container = document.getElementById('prompts-container');
+            
+            if (filteredPrompts.length === 0) {
+                container.innerHTML = '<div class="loading">No prompts found</div>';
+                return;
+            }
+            
+            container.innerHTML = filteredPrompts.map(prompt => {
+                const processingTime = prompt.processing_time ? Math.round(prompt.processing_time/1000) : null;
+                const imageSize = prompt.image_size || 'Unknown';
+                const falModel = prompt.fal_model || 'background-change';
+                const fallbackReason = prompt.fallback_reason;
+                const hasError = prompt.gpt_error || prompt.gpt_response || prompt.gpt_refusal_response || prompt.gpt_invalid_response;
+                const gptDetails = [];
+                if (prompt.gpt_refusal_response) gptDetails.push('🛑 Refusal');
+                if (prompt.gpt_invalid_response) gptDetails.push('⚠️ Invalid');
+                if (prompt.gpt_error) gptDetails.push('🚨 Error');
+                if (prompt.gpt_raw_response && !prompt.gpt_error && !prompt.gpt_refusal_response && !prompt.gpt_invalid_response) gptDetails.push('📝 Raw');
+                
+                return `
+                <div class="prompt-card" onclick="showPromptDetails('${prompt.id}')">
+                    <div class="prompt-header">
+                        <div class="prompt-id">${prompt.id.substring(0, 8)}... | ${prompt.theme.toUpperCase()}</div>
+                        <div class="prompt-status status-${prompt.status}">${prompt.status}</div>
+                    </div>
+                    <div class="prompt-date">${new Date(prompt.created_at).toLocaleString()}</div>
+                    
+                    <div style="margin: 8px 0; font-size: 12px; color: #E3C14B;">
+                        ${prompt.prompt_type} 
+                        ${processingTime ? `| ⏱️ ${processingTime}s` : ''}
+                        ${prompt.gpt_success === true ? ' | 🤖 GPT ✓' : ''}
+                        ${prompt.gpt_success === false ? ' | 🤖 GPT ✗' : ''}
+                        ${fallbackReason ? ` | 🔄 FALLBACK` : ''}
+                    </div>
+                    
+                    <div style="margin: 4px 0; font-size: 11px; color: #666;">
+                        📐 ${imageSize} | 🎯 ${falModel}
+                        ${fallbackReason ? `<br>🚨 Fallback: ${fallbackReason}` : ''}
+                        ${gptDetails.length > 0 ? `<br>🤖 GPT: ${gptDetails.join(', ')}` : ''}
+                        ${hasError ? `<br>⚠️ Has Response Details` : ''}
+                    </div>
+                    
+                    ${prompt.final_prompt ? `
+                        <div class="prompt-text">${prompt.final_prompt}</div>
+                        <div class="prompt-length">${prompt.final_prompt_length} characters</div>
+                    ` : '<div class="prompt-text">No final prompt data</div>'}
+                    
+                    ${prompt.ai_prompt ? `
+                        <div style="margin-top: 8px; padding: 8px; background: rgba(227, 193, 75, 0.1); border-radius: 4px;">
+                            <div style="font-size: 11px; color: #E3C14B; margin-bottom: 4px;">🤖 GPT Generated (${prompt.ai_prompt_length} chars):</div>
+                            <div style="font-size: 12px; color: #CCC;">${prompt.ai_prompt.substring(0, 100)}...</div>
+                        </div>
+                    ` : ''}
+                    
+                    ${prompt.gpt_input_prompt ? `
+                        <div style="margin-top: 8px; padding: 8px; background: rgba(100, 100, 100, 0.1); border-radius: 4px;">
+                            <div style="font-size: 11px; color: #999; margin-bottom: 4px;">📝 GPT Input (${prompt.gpt_input_length} chars):</div>
+                            <div style="font-size: 12px; color: #AAA;">${prompt.gpt_input_prompt.substring(0, 80)}...</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            }).join('');
+        }
+        
+        function filterPrompts() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+            const themeFilter = document.getElementById('theme-filter').value;
+            const gptFilter = document.getElementById('gpt-filter').value;
+            
+            filteredPrompts = allPrompts.filter(prompt => {
+                // Text search
+                const matchesSearch = !searchTerm || (
+                    prompt.id.toLowerCase().includes(searchTerm) ||
+                    prompt.user_id.toLowerCase().includes(searchTerm) ||
+                    prompt.theme.toLowerCase().includes(searchTerm) ||
+                    prompt.status.toLowerCase().includes(searchTerm) ||
+                    (prompt.ai_prompt && prompt.ai_prompt.toLowerCase().includes(searchTerm)) ||
+                    (prompt.gpt_input_prompt && prompt.gpt_input_prompt.toLowerCase().includes(searchTerm)) ||
+                    (prompt.final_prompt && prompt.final_prompt.toLowerCase().includes(searchTerm)) ||
+                    (prompt.prompt_type && prompt.prompt_type.toLowerCase().includes(searchTerm))
+                );
+                
+                // Status filter
+                const matchesStatus = !statusFilter || prompt.status === statusFilter;
+                
+                // Theme filter
+                const matchesTheme = !themeFilter || prompt.theme === themeFilter;
+                
+                // GPT filter
+                const matchesGpt = !gptFilter || (
+                    (gptFilter === 'true' && prompt.gpt_success === true) ||
+                    (gptFilter === 'false' && prompt.gpt_success === false) ||
+                    (gptFilter === 'null' && prompt.gpt_success === null)
+                );
+                
+                return matchesSearch && matchesStatus && matchesTheme && matchesGpt;
+            });
+            
+            renderPrompts();
+            
+            // Update results count
+            const resultsCount = document.getElementById('results-count');
+            if (resultsCount) {
+                resultsCount.textContent = `${filteredPrompts.length} of ${allPrompts.length} jobs`;
+            }
+        }
+        
+        function showPromptDetails(promptId) {
+            const prompt = allPrompts.find(p => p.id === promptId);
+            if (!prompt) return;
+            
+            const processingTime = prompt.processing_time ? Math.round(prompt.processing_time/1000) : null;
+            
+            const modalBody = document.getElementById('modal-body');
+            modalBody.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #E3C14B; margin-bottom: 10px;">📊 Job Information</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+                        <p><strong>Job ID:</strong> <code>${prompt.id}</code></p>
+                        <p><strong>User ID:</strong> <code>${prompt.user_id.substring(0, 8)}...</code></p>
+                        <p><strong>Theme:</strong> ${prompt.theme}</p>
+                        <p><strong>Status:</strong> <span class="prompt-status status-${prompt.status}">${prompt.status}</span></p>
+                        <p><strong>Created:</strong> ${new Date(prompt.created_at).toLocaleString()}</p>
+                        <p><strong>Updated:</strong> ${new Date(prompt.updated_at).toLocaleString()}</p>
+                        <p><strong>Prompt Type:</strong> ${prompt.prompt_type}</p>
+                        <p><strong>Processing Time:</strong> ${processingTime ? processingTime + 's' : 'N/A'}</p>
+                        <p><strong>Image Size:</strong> ${prompt.image_size || 'Unknown'}</p>
+                        <p><strong>FAL Model:</strong> ${prompt.fal_model || 'background-change'}</p>
+                        <p><strong>GPT Success:</strong> ${prompt.gpt_success === true ? '✅ Yes' : prompt.gpt_success === false ? '❌ No' : 'N/A'}</p>
+                        <p><strong>GPT API Success:</strong> ${prompt.gpt_api_success === true ? '✅ Yes' : prompt.gpt_api_success === false ? '❌ No' : 'N/A'}</p>
+                        <p><strong>Result Path:</strong> ${prompt.result_path ? '✅ Available' : '❌ Missing'}</p>
+                        ${prompt.fallback_reason ? `<p><strong>Fallback Reason:</strong> <span style="color: #FF9800;">${prompt.fallback_reason}</span></p>` : ''}
+                        ${prompt.gpt_error ? `<p><strong>GPT Error:</strong> <span style="color: #F44336;">Yes</span></p>` : ''}
+                        ${prompt.gpt_refusal_response ? `<p><strong>GPT Refusal:</strong> <span style="color: #FF5722;">Yes</span></p>` : ''}
+                        ${prompt.gpt_invalid_response ? `<p><strong>GPT Invalid:</strong> <span style="color: #FF9800;">Yes</span></p>` : ''}
+                    </div>
+                </div>
+                
+                ${prompt.gpt_error ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #F44336; margin-bottom: 10px;">🚨 GPT API Error</h3>
+                        <div class="modal-prompt" style="background: #2D1B1B; border-color: #F44336;">${prompt.gpt_error}</div>
+                    </div>
+                ` : ''}
+                
+                ${prompt.gpt_raw_response ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #2196F3; margin-bottom: 10px;">📝 GPT Raw Response (Complete)</h3>
+                        <div class="modal-prompt" style="background: #1B2329; border-color: #2196F3;">${prompt.gpt_raw_response}</div>
+                    </div>
+                ` : ''}
+                
+                ${prompt.gpt_refusal_response ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #FF5722; margin-bottom: 10px;">🛑 GPT Refusal Response</h3>
+                        <div class="modal-prompt" style="background: #2D1F1B; border-color: #FF5722;">${prompt.gpt_refusal_response}</div>
+                    </div>
+                ` : ''}
+                
+                ${prompt.gpt_invalid_response ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #FF9800; margin-bottom: 10px;">⚠️ GPT Invalid Response (Too Short)</h3>
+                        <div class="modal-prompt" style="background: #2D2419; border-color: #FF9800;">${prompt.gpt_invalid_response}</div>
+                    </div>
+                ` : ''}
+                
+                ${prompt.gpt_response ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #FF9800; margin-bottom: 10px;">🤖 GPT Legacy Response</h3>
+                        <div class="modal-prompt" style="background: #2D2419; border-color: #FF9800;">${prompt.gpt_response}</div>
+                    </div>
+                ` : ''}
+                
+                ${prompt.gpt_raw_response ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #2196F3; margin-bottom: 10px;">📝 GPT Raw Response (All Cases)</h3>
+                        <div class="modal-prompt" style="background: #1B2329; border-color: #2196F3;">${prompt.gpt_raw_response}</div>
+                    </div>
+                ` : ''}
+                
+                ${prompt.gpt_refusal_response ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #FF5722; margin-bottom: 10px;">🛑 GPT Refusal Details</h3>
+                        <div class="modal-prompt" style="background: #2D1F1B; border-color: #FF5722;">${prompt.gpt_refusal_response}</div>
+                    </div>
+                ` : ''}
+                
+                ${prompt.gpt_invalid_response ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #FF9800; margin-bottom: 10px;">⚠️ GPT Invalid Response (Too Short)</h3>
+                        <div class="modal-prompt" style="background: #2D2419; border-color: #FF9800;">${prompt.gpt_invalid_response}</div>
+                    </div>
+                ` : ''}
+                
+                ${prompt.gpt_input_prompt ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #E3C14B; margin-bottom: 10px;">📝 GPT Input Prompt (${prompt.gpt_input_length} chars)</h3>
+                        <div class="modal-prompt">${prompt.gpt_input_prompt}</div>
+                    </div>
+                ` : ''}
+                
+                ${prompt.ai_prompt ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #E3C14B; margin-bottom: 10px;">🤖 GPT Generated Prompt (${prompt.ai_prompt_length} chars)</h3>
+                        <div class="modal-prompt">${prompt.ai_prompt}</div>
+                    </div>
+                ` : ''}
+                
+                ${prompt.final_prompt ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #E3C14B; margin-bottom: 10px;">🎯 Final Prompt Sent to FAL AI (${prompt.final_prompt_length} chars)</h3>
+                        <div class="modal-prompt">${prompt.final_prompt}</div>
+                    </div>
+                ` : ''}
+                
+                ${prompt.processing_details ? `
+                    <div>
+                        <h3 style="color: #E3C14B; margin-bottom: 10px;">🔧 Processing Details</h3>
+                        <div class="modal-prompt">${JSON.stringify(prompt.processing_details, null, 2)}</div>
+                    </div>
+                ` : ''}
+                
+                ${!prompt.ai_prompt && !prompt.gpt_input_prompt && !prompt.final_prompt ? '<p style="color: #666;">No prompt data available for this job.</p>' : ''}
+            `;
+            
+            document.getElementById('prompt-modal').style.display = 'block';
+        }
+        
+        function closeModal(event) {
+            if (!event || event.target.id === 'prompt-modal') {
+                document.getElementById('prompt-modal').style.display = 'none';
+            }
+        }
+        
+        function exportData() {
+            const csvData = allPrompts.map(p => ({
+                id: p.id,
+                user_id: p.user_id,
+                theme: p.theme,
+                status: p.status,
+                created_at: p.created_at,
+                updated_at: p.updated_at,
+                prompt_type: p.prompt_type,
+                processing_time: p.processing_time,
+                image_size: p.image_size,
+                fal_model: p.fal_model,
+                gpt_success: p.gpt_success,
+                gpt_input_length: p.gpt_input_length,
+                ai_prompt_length: p.ai_prompt_length,
+                final_prompt_length: p.final_prompt_length,
+                gpt_input_prompt: p.gpt_input_prompt ? p.gpt_input_prompt.replace(/"/g, '""') : '',
+                ai_prompt: p.ai_prompt ? p.ai_prompt.replace(/"/g, '""') : '',
+                final_prompt: p.final_prompt ? p.final_prompt.replace(/"/g, '""') : ''
+            }));
+            
+            const csv = [
+                ['ID', 'User ID', 'Theme', 'Status', 'Created At', 'Updated At', 'Prompt Type', 'Processing Time', 'Image Size', 'FAL Model', 'GPT Success', 'GPT Input Length', 'AI Prompt Length', 'Final Prompt Length', 'GPT Input Prompt', 'AI Prompt', 'Final Prompt'],
+                ...csvData.map(row => [
+                    row.id,
+                    row.user_id,
+                    row.theme,
+                    row.status,
+                    row.created_at,
+                    row.updated_at,
+                    row.prompt_type,
+                    row.processing_time,
+                    row.image_size,
+                    row.fal_model,
+                    row.gpt_success,
+                    row.gpt_input_length,
+                    row.ai_prompt_length,
+                    row.final_prompt_length,
+                    `"${row.gpt_input_prompt}"`,
+                    `"${row.ai_prompt}"`,
+                    `"${row.final_prompt}"`
+                ])
+            ].map(row => row.join(',')).join('\\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `camyvex-comprehensive-analytics-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+            if (e.key === '/' && e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+                document.getElementById('search-input').focus();
+            }
+        });
+    </script>
+</body>
+</html>

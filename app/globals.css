@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  color: white;
+  background: #0B0D0F;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #E3C14B 0%, #F4D03F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-gradient {
+  background: radial-gradient(ellipse at center, rgba(227, 193, 75, 0.1) 0%, transparent 70%);
+}
