@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 export default function AdminDashboard() {
   useEffect(() => {
     // Redirect to the existing admin dashboard
-    window.location.href = '/admin-dashboard/index.html'
+    window.location.href = '/admin-dashboard.html'
   }, [])
 
   return (

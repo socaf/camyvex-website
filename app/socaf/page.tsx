@@ -19,7 +19,7 @@ export default function AdminPage() {
     setTimeout(() => {
       if (password === 'camyvex2024!') {
         // Redirect to actual admin dashboard
-        window.location.href = '/admin-dashboard'
+        window.location.href = '/admin-dashboard.html'
       } else {
         setError('Invalid password')
       }
