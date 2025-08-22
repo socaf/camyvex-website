@@ -18,8 +18,10 @@ export default function AdminPage() {
     // Simulate authentication - replace with actual auth logic
     setTimeout(() => {
       if (password === 'camyvex2024!') {
+        // Set authentication flag
+        sessionStorage.setItem('camyvexAdminAuth', 'true')
         // Redirect to actual admin dashboard
-        window.location.href = '/admin-dashboard.html'
+        window.location.href = '/dashboard'
       } else {
         setError('Invalid password')
       }
