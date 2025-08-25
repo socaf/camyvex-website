@@ -92,6 +92,8 @@ export default function AdminDashboard() {
   const updateContent = async (section: string, key: string, value: string, type: string = 'text') => {
     setIsSaving(true)
     try {
+      console.log('Updating content:', { section, key, value, type })
+      
       const response = await fetch('/api/content', {
         method: 'POST',
         headers: {
@@ -100,15 +102,19 @@ export default function AdminDashboard() {
         body: JSON.stringify({ section, key, value, type }),
       })
       
+      const result = await response.json()
+      console.log('API Response:', result)
+      
       if (response.ok) {
         await loadContent()
         alert('Content updated successfully!')
       } else {
-        alert('Error updating content')
+        console.error('API Error:', result)
+        alert(`Error updating content: ${result.error || 'Unknown error'}`)
       }
     } catch (error) {
-      console.error('Error updating content:', error)
-      alert('Error updating content')
+      console.error('Network Error:', error)
+      alert(`Network error: ${error}`)
     } finally {
       setIsSaving(false)
     }

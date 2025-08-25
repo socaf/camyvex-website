@@ -36,9 +36,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { section, key, value, type = 'text' } = body
     
+    console.log('POST Request Body:', { section, key, value, type })
+    
     if (!section || !key || value === undefined) {
+      console.log('Missing required fields')
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+    
+    console.log('Attempting upsert with service role key')
     
     const { data, error } = await supabase
       .from('website_content')
@@ -46,11 +51,14 @@ export async function POST(request: NextRequest) {
       .select()
     
     if (error) {
+      console.error('Supabase Error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     
+    console.log('Success:', data)
     return NextResponse.json({ data })
   } catch (error) {
+    console.error('Catch Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
