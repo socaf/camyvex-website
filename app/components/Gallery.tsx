@@ -1,20 +1,11 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function Gallery() {
   const [selectedCategory, setSelectedCategory] = useState('all')
-
-  const categories = [
-    { id: 'all', name: 'All' },
-    { id: 'portrait', name: 'Portrait' },
-    { id: 'lifestyle', name: 'Lifestyle' },
-    { id: 'luxury', name: 'Luxury' }
-  ]
-
-  // Placeholder gallery items - replace with actual before/after images
-  const galleryItems = [
+  const [galleryItems, setGalleryItems] = useState([
     {
       id: 1,
       category: 'portrait',
@@ -57,7 +48,36 @@ export default function Gallery() {
       after: '/api/placeholder/300/400',
       title: 'Luxury Experience'
     }
+  ])
+
+  const categories = [
+    { id: 'all', name: 'All' },
+    { id: 'portrait', name: 'Portrait' },
+    { id: 'lifestyle', name: 'Lifestyle' },
+    { id: 'luxury', name: 'Luxury' }
   ]
+
+  useEffect(() => {
+    const loadGalleryImages = async () => {
+      try {
+        const response = await fetch('/api/gallery')
+        const result = await response.json()
+        if (result.data && result.data.length > 0) {
+          const formattedItems = result.data.map((item: any, index: number) => ({
+            id: item.id,
+            category: 'luxury', // Default category
+            before: item.before_image_url,
+            after: item.after_image_url,
+            title: item.title
+          }))
+          setGalleryItems(formattedItems)
+        }
+      } catch (error) {
+        console.error('Error loading gallery:', error)
+      }
+    }
+    loadGalleryImages()
+  }, [])
 
   const filteredItems = selectedCategory === 'all' 
     ? galleryItems 

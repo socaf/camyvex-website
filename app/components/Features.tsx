@@ -9,9 +9,22 @@ import {
   StarIcon,
   ClockIcon 
 } from '@heroicons/react/24/outline'
+import { useState, useEffect } from 'react'
+
+const iconMap: any = {
+  'sparkles': SparklesIcon,
+  'bolt': BoltIcon,
+  'shield-check': ShieldCheckIcon,
+  'photo': PhotoIcon,
+  'star': StarIcon,
+  'clock': ClockIcon,
+  'lightning-bolt': BoltIcon,
+  'camera': PhotoIcon,
+  'photograph': PhotoIcon
+}
 
 export default function Features() {
-  const features = [
+  const [features, setFeatures] = useState([
     {
       icon: SparklesIcon,
       title: 'AI-Powered Enhancement',
@@ -42,7 +55,27 @@ export default function Features() {
       title: '24/7 Available',
       description: 'Transform your photos anytime, anywhere. Our AI never sleeps and is always ready to create magic.'
     }
-  ]
+  ])
+
+  useEffect(() => {
+    const loadFeatures = async () => {
+      try {
+        const response = await fetch('/api/features')
+        const result = await response.json()
+        if (result.data && result.data.length > 0) {
+          const formattedFeatures = result.data.map((feature: any) => ({
+            icon: iconMap[feature.icon] || StarIcon,
+            title: feature.title,
+            description: feature.description
+          }))
+          setFeatures(formattedFeatures)
+        }
+      } catch (error) {
+        console.error('Error loading features:', error)
+      }
+    }
+    loadFeatures()
+  }, [])
 
   return (
     <section id="features" className="py-24 bg-dark-secondary">

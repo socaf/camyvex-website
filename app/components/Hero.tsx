@@ -2,8 +2,35 @@
 
 import { motion } from 'framer-motion'
 import { ChevronDownIcon, SparklesIcon } from '@heroicons/react/24/outline'
+import { useState, useEffect } from 'react'
 
 export default function Hero() {
+  const [heroContent, setHeroContent] = useState({
+    title: 'Transform Your Photos into Luxury Lifestyle Moments',
+    subtitle: 'Create professional-quality luxury photos instantly with our AI-powered enhancement technology. Turn ordinary moments into extraordinary memories.'
+  })
+
+  useEffect(() => {
+    const loadHeroContent = async () => {
+      try {
+        const response = await fetch('/api/content?section=hero')
+        const result = await response.json()
+        if (result.data) {
+          const content: any = {}
+          result.data.forEach((item: any) => {
+            content[item.key] = item.value
+          })
+          setHeroContent({
+            title: content.title || heroContent.title,
+            subtitle: content.subtitle || heroContent.subtitle
+          })
+        }
+      } catch (error) {
+        console.error('Error loading hero content:', error)
+      }
+    }
+    loadHeroContent()
+  }, [])
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background gradient */}
@@ -29,15 +56,12 @@ export default function Hero() {
 
           {/* Main heading */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
-            Transform Your Photos into{' '}
-            <span className="gradient-text">Luxury Lifestyle</span>{' '}
-            Moments
+            {heroContent.title}
           </h1>
 
           {/* Subtitle */}
           <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Create professional-quality luxury photos instantly with our AI-powered enhancement technology. 
-            Turn ordinary moments into extraordinary memories.
+            {heroContent.subtitle}
           </p>
 
           {/* CTA Buttons */}
