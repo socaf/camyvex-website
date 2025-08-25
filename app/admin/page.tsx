@@ -42,7 +42,7 @@ export default function AdminPage() {
               <LockClosedIcon className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">Admin Panel</h1>
-            <p className="text-gray-400">Enter your credentials to access the dashboard</p>
+            <p className="text-gray-400">Enter your credentials to access the dashboard - Live Update Test ✅</p>
           </div>
 
           {/* Login Form */}
